@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import warnings
 import joblib
+import os
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
@@ -36,17 +37,21 @@ from sklearn.metrics import silhouette_score
 from sklearn.compose import ColumnTransformer
 
 
-def supervised_preprocessing(csv_path, target_column):
+def supervised_preprocessing(csv_path, target_column, user_id):
     df = pd.read_csv(csv_path)
     num_selected_features = df.shape[1] - 1
 
     X = df.drop(columns=[target_column])
     y = df[target_column]
     classes = X.columns.tolist()
+
+    labels_directory = "User_labels"
+    os.makedirs(labels_directory, exist_ok=True)
+    labels_file_path = os.path.join(labels_directory, f"{user_id}_original_labels.txt")
     if y.dtypes == 'object':
         label_encoder = LabelEncoder()
         y_encoded = label_encoder.fit_transform(y)
-        with open('original_labels.txt', 'w') as file:
+        with open(labels_file_path, 'w') as file:
             for label in label_encoder.classes_:
                 file.write("%s\n" % label)
     else:
@@ -131,7 +136,9 @@ def supervised_preprocessing(csv_path, target_column):
             best_model = model_pipeline
 
         if best_model is not None:
-            joblib.dump(best_model, 'Best_Model.pkl')
+            directory_path = "User_models"
+            os.makedirs(directory_path, exist_ok=True)
+            joblib.dump(best_model, os.path.join(directory_path, f"{user_id}_Best_Model.pkl"))
 
     return best_model_name, best_metric, accuracy, precision, recall, classes
 
@@ -181,6 +188,6 @@ def generic_clustering(csv_path, max_clusters=10):
         df['Cluster_Labels_KMeans'] = kmeans_labels
         # print(df[['Cluster_Labels_KMeans']])
 
-        return optimal_num_clusters, round(silhouette_kmeans, 3)
+        return optimal_num_clusters, round(silhouette_kmeans, 3), kmeans_labels
 
 # Example usage:
